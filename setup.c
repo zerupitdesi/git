@@ -1278,18 +1278,10 @@ const char *setup_git_directory_gently(int *nongit_ok)
 	 * the GIT_PREFIX environment variable must always match. For details
 	 * see Documentation/config/alias.txt.
 	 */
-	if (nongit_ok && *nongit_ok) {
+	if (nongit_ok && *nongit_ok)
 		startup_info->have_repository = 0;
-		startup_info->prefix = NULL;
-		setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
-	} else {
+	else
 		startup_info->have_repository = 1;
-		startup_info->prefix = prefix;
-		if (prefix)
-			setenv(GIT_PREFIX_ENVIRONMENT, prefix, 1);
-		else
-			setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
-	}
 
 	/*
 	 * Not all paths through the setup code will call 'set_git_dir()' (which
@@ -1318,6 +1310,22 @@ const char *setup_git_directory_gently(int *nongit_ok)
 				xstrdup_or_null(repo_fmt.ref_storage);
 		}
 	}
+	/*
+	 * Since precompose_string_if_needed() needs to look at
+	 * the core.precomposeunicode configuration, this
+	 * has to happen after the above block that finds
+	 * out where the repository is, i.e. a preparation
+	 * for calling git_config_get_bool().
+	 */
+	if (prefix) {
+		prefix = precompose_string_if_needed(prefix);
+		startup_info->prefix = prefix;
+		setenv(GIT_PREFIX_ENVIRONMENT, prefix, 1);
+	} else {
+		startup_info->prefix = NULL;
+		setenv(GIT_PREFIX_ENVIRONMENT, "", 1);
+	}
+
 
 	strbuf_release(&dir);
 	strbuf_release(&gitdir);
